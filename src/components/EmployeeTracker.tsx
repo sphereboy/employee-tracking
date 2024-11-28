@@ -80,7 +80,7 @@ export function EmployeeTracker() {
     };
 
     fetchEmployees();
-  }, [session, status]);
+  }, [session, status, companies]);
 
   const handleEmployeeAdded = (newEmployee: Employee) => {
     // Update both the companies array and the selected company

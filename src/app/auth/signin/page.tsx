@@ -18,7 +18,7 @@ export default function SignIn() {
     setIsLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      await signIn("credentials", {
         email,
         callbackUrl,
         redirect: true,
