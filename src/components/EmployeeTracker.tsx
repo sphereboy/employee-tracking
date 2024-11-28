@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import {
   DndContext,
   DragEndEvent,
@@ -32,6 +33,7 @@ const initialCompanies: Company[] = [
 ];
 
 export function EmployeeTracker() {
+  const { data: session, status } = useSession();
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [selectedCompany, setSelectedCompany] = useState<Company>(companies[0]);
   const [grouping, setGrouping] = useState<"department" | "location" | "none">(
@@ -45,9 +47,11 @@ export function EmployeeTracker() {
     useSensor(KeyboardSensor)
   );
 
-  // Fetch employees when component mounts and when selected company changes
   useEffect(() => {
     const fetchEmployees = async () => {
+      if (status === "loading") return;
+      if (!session) return;
+
       try {
         const response = await fetch("/api/employees");
         if (!response.ok) throw new Error("Failed to fetch employees");
@@ -62,22 +66,21 @@ export function EmployeeTracker() {
         }));
 
         setCompanies(updatedCompanies);
-        // Update selected company with fetched employees
-        setSelectedCompany((prevSelected) => ({
-          ...prevSelected,
+        setSelectedCompany((prev) => ({
+          ...prev,
           employees: employees.filter(
-            (emp: Employee) => emp.companyId === prevSelected.id
+            (emp: Employee) => emp.companyId === prev.id
           ),
         }));
-        setIsLoading(false);
       } catch (error) {
         console.error("Error fetching employees:", error);
+      } finally {
         setIsLoading(false);
       }
     };
 
     fetchEmployees();
-  }, []);
+  }, [session, status]);
 
   const handleEmployeeAdded = (newEmployee: Employee) => {
     // Update both the companies array and the selected company
@@ -143,6 +146,48 @@ export function EmployeeTracker() {
     setActiveId(null);
   };
 
+  const handleEmployeeUpdate = (updatedEmployee: Employee) => {
+    setCompanies(
+      companies.map((company) => {
+        if (company.id === selectedCompany.id) {
+          return {
+            ...company,
+            employees: company.employees.map((emp) =>
+              emp.id === updatedEmployee.id ? updatedEmployee : emp
+            ),
+          };
+        }
+        return company;
+      })
+    );
+
+    setSelectedCompany((prev) => ({
+      ...prev,
+      employees: prev.employees.map((emp) =>
+        emp.id === updatedEmployee.id ? updatedEmployee : emp
+      ),
+    }));
+  };
+
+  const handleEmployeeDelete = (employeeId: number) => {
+    setCompanies(
+      companies.map((company) => {
+        if (company.id === selectedCompany.id) {
+          return {
+            ...company,
+            employees: company.employees.filter((emp) => emp.id !== employeeId),
+          };
+        }
+        return company;
+      })
+    );
+
+    setSelectedCompany((prev) => ({
+      ...prev,
+      employees: prev.employees.filter((emp) => emp.id !== employeeId),
+    }));
+  };
+
   const groupedEmployees = getGroupedEmployees();
   const activeEmployee = activeId
     ? selectedCompany.employees.find((emp) => emp.id === activeId)
@@ -185,7 +230,11 @@ export function EmployeeTracker() {
                     key={`employee-${employee.id}-${employee.companyId}`}
                     id={employee.id}
                   >
-                    <EmployeeCard employee={employee} />
+                    <EmployeeCard
+                      employee={employee}
+                      onUpdate={handleEmployeeUpdate}
+                      onDelete={handleEmployeeDelete}
+                    />
                   </Draggable>
                 ))}
               </div>
@@ -196,7 +245,11 @@ export function EmployeeTracker() {
         <DragOverlay>
           {activeEmployee ? (
             <div className="opacity-80">
-              <EmployeeCard employee={activeEmployee} />
+              <EmployeeCard
+                employee={activeEmployee}
+                onUpdate={() => {}} // Provide empty functions since this is just a preview
+                onDelete={() => {}}
+              />
             </div>
           ) : null}
         </DragOverlay>

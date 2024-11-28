@@ -12,6 +12,8 @@ export interface Employee {
   directReports: number[];
   companyId: number;
   accountId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Company {
