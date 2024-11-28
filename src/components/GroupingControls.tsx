@@ -1,7 +1,7 @@
 "use client";
 
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Users, MapPin, LayoutGrid } from "lucide-react";
 
 interface GroupingControlsProps {
   grouping: "department" | "location" | "none";
@@ -14,36 +14,33 @@ export function GroupingControls({
 }: GroupingControlsProps) {
   return (
     <div className="bg-card rounded-lg border p-4 shadow-sm">
-      <RadioGroup
+      <p className="text-sm font-medium mb-3">Group by</p>
+      <ToggleGroup
+        type="single"
         value={grouping}
-        onValueChange={onGroupingChange as (value: string) => void}
-        className="flex flex-col gap-3"
+        onValueChange={(value) => {
+          if (value)
+            onGroupingChange(value as "department" | "location" | "none");
+        }}
       >
-        <div className="flex items-center space-x-2 hover:bg-accent/50 p-2 rounded-md transition-colors">
-          <RadioGroupItem value="none" id="none" />
-          <Label htmlFor="none" className="cursor-pointer font-medium text-sm">
-            No Grouping
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2 hover:bg-accent/50 p-2 rounded-md transition-colors">
-          <RadioGroupItem value="department" id="department" />
-          <Label
-            htmlFor="department"
-            className="cursor-pointer font-medium text-sm"
-          >
-            Group by Department
-          </Label>
-        </div>
-        <div className="flex items-center space-x-2 hover:bg-accent/50 p-2 rounded-md transition-colors">
-          <RadioGroupItem value="location" id="location" />
-          <Label
-            htmlFor="location"
-            className="cursor-pointer font-medium text-sm"
-          >
-            Group by Location
-          </Label>
-        </div>
-      </RadioGroup>
+        <ToggleGroupItem value="none" aria-label="No grouping">
+          <LayoutGrid className="h-4 w-4" />
+          <span className="sr-only">No grouping</span>
+        </ToggleGroupItem>
+        <ToggleGroupItem value="department" aria-label="Group by department">
+          <Users className="h-4 w-4" />
+          <span className="sr-only">Group by department</span>
+        </ToggleGroupItem>
+        <ToggleGroupItem value="location" aria-label="Group by location">
+          <MapPin className="h-4 w-4" />
+          <span className="sr-only">Group by location</span>
+        </ToggleGroupItem>
+      </ToggleGroup>
+      <div className="mt-2 text-xs text-muted-foreground">
+        {grouping === "none" && "All employees"}
+        {grouping === "department" && "Grouped by department"}
+        {grouping === "location" && "Grouped by location"}
+      </div>
     </div>
   );
 }
