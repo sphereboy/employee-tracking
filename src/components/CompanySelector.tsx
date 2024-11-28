@@ -28,12 +28,16 @@ export function CompanySelector({
           onSelectCompany(companies.find((c) => c.id.toString() === value)!)
         }
       >
-        <SelectTrigger>
+        <SelectTrigger className="w-full bg-card border-input hover:bg-accent/50 transition-colors">
           <SelectValue placeholder="Select a company" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-card">
           {companies.map((company) => (
-            <SelectItem key={company.id} value={company.id.toString()}>
+            <SelectItem
+              key={company.id}
+              value={company.id.toString()}
+              className="hover:bg-accent/50 cursor-pointer transition-colors"
+            >
               {company.name}
             </SelectItem>
           ))}

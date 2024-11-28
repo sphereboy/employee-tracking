@@ -19,47 +19,62 @@ export function EmployeeCard({ employee }: EmployeeCardProps) {
   const timeDifference = getTimeDifference(employee.timeZone);
 
   return (
-    <Card className="w-full h-full">
-      <CardHeader className="flex flex-row items-center gap-4">
-        <Avatar className="h-16 w-16">
-          <AvatarImage src={employee.avatar} alt={employee.name} />
-          <AvatarFallback className="text-lg">
+    <Card className="w-full h-full transition-all hover:shadow-lg">
+      <CardHeader className="flex flex-row items-center gap-4 p-4">
+        <Avatar className="h-16 w-16 border-2 border-primary/10">
+          <AvatarImage
+            src={employee.avatar}
+            alt={employee.name}
+            className="object-cover"
+          />
+          <AvatarFallback className="text-lg bg-primary/5">
             {employee.name
               .split(" ")
               .map((n) => n[0])
               .join("")}
           </AvatarFallback>
         </Avatar>
-        <div>
-          <CardTitle className="text-xl">{employee.name}</CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">{employee.title}</p>
+        <div className="space-y-1">
+          <CardTitle className="text-xl font-semibold leading-none">
+            {employee.name}
+          </CardTitle>
+          <p className="text-sm text-muted-foreground font-medium">
+            {employee.title}
+          </p>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-4 pt-0">
         <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span>{employee.location}</span>
+          <div className="flex items-center gap-2 text-sm">
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate">{employee.location}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>{currentTime}</span>
+            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-sm">{currentTime}</span>
             <Badge
               variant={
                 availabilityStatus === "Available" ? "default" : "secondary"
               }
+              className="ml-auto"
             >
               {availabilityStatus}
             </Badge>
           </div>
-          <div className="text-sm text-muted-foreground">{timeDifference}</div>
-          <div className="flex items-center gap-2">
-            <Mail className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{employee.email}</span>
+          <div className="text-sm text-muted-foreground pl-6">
+            {timeDifference}
           </div>
-          <div className="flex items-center gap-2">
-            <Phone className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm">{employee.phone}</span>
+          <div className="flex items-center gap-2 text-sm">
+            <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate hover:text-primary transition-colors">
+              <a href={`mailto:${employee.email}`}>{employee.email}</a>
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="truncate hover:text-primary transition-colors">
+              <a href={`tel:${employee.phone}`}>{employee.phone}</a>
+            </span>
           </div>
         </div>
       </CardContent>
