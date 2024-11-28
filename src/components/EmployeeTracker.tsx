@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -15,42 +15,14 @@ import {
 import { EmployeeCard } from "./EmployeeCard";
 import { CompanySelector } from "./CompanySelector";
 import { GroupingControls } from "./GroupingControls";
+import { AddEmployeeDialog } from "./AddEmployeeDialog";
 import { Employee, Company } from "@/types";
 
-const companies: Company[] = [
+const initialCompanies: Company[] = [
   {
     id: 1,
     name: "TechCorp",
-    employees: [
-      {
-        id: 1,
-        name: "John Doe",
-        title: "CEO",
-        location: "New York",
-        timeZone: "America/New_York",
-        department: "Executive",
-        email: "john@techcorp.com",
-        phone: "+1 (555) 123-4567",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          "John Doe"
-        )}&background=random`,
-        directReports: [2, 3],
-      },
-      {
-        id: 2,
-        name: "Jane Smith",
-        title: "CTO",
-        location: "San Francisco",
-        timeZone: "America/Los_Angeles",
-        department: "Technology",
-        email: "jane@techcorp.com",
-        phone: "+1 (555) 987-6543",
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          "Jane Smith"
-        )}&background=random`,
-        directReports: [4, 5],
-      },
-    ],
+    employees: [],
   },
   {
     id: 2,
@@ -60,16 +32,84 @@ const companies: Company[] = [
 ];
 
 export function EmployeeTracker() {
+  const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [selectedCompany, setSelectedCompany] = useState<Company>(companies[0]);
   const [grouping, setGrouping] = useState<"department" | "location" | "none">(
     "none"
   );
   const [activeId, setActiveId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor)
   );
+
+  // Fetch employees when component mounts and when selected company changes
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch("/api/employees");
+        if (!response.ok) throw new Error("Failed to fetch employees");
+        const employees = await response.json();
+
+        // Group employees by company
+        const updatedCompanies = companies.map((company) => ({
+          ...company,
+          employees: employees.filter(
+            (emp: Employee) => emp.companyId === company.id
+          ),
+        }));
+
+        setCompanies(updatedCompanies);
+        // Update selected company with fetched employees
+        setSelectedCompany((prevSelected) => ({
+          ...prevSelected,
+          employees: employees.filter(
+            (emp: Employee) => emp.companyId === prevSelected.id
+          ),
+        }));
+        setIsLoading(false);
+      } catch (error) {
+        console.error("Error fetching employees:", error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
+
+  const handleEmployeeAdded = (newEmployee: Employee) => {
+    // Update both the companies array and the selected company
+    const updatedCompanies = companies.map((company) => {
+      if (company.id === newEmployee.companyId) {
+        return {
+          ...company,
+          employees: [...company.employees, newEmployee],
+        };
+      }
+      return company;
+    });
+
+    setCompanies(updatedCompanies);
+
+    if (selectedCompany.id === newEmployee.companyId) {
+      setSelectedCompany((prev) => ({
+        ...prev,
+        employees: [...prev.employees, newEmployee],
+      }));
+    }
+  };
+
+  const handleCompanySelect = (company: Company) => {
+    // Find the company with its current employees in the companies array
+    const selectedCompanyWithEmployees = companies.find(
+      (c) => c.id === company.id
+    );
+    if (selectedCompanyWithEmployees) {
+      setSelectedCompany(selectedCompanyWithEmployees);
+    }
+  };
 
   const getGroupedEmployees = () => {
     if (grouping === "none") {
@@ -108,14 +148,24 @@ export function EmployeeTracker() {
     ? selectedCompany.employees.find((emp) => emp.id === activeId)
     : null;
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <div className="p-4 space-y-6">
       <div className="flex justify-between items-start">
-        <CompanySelector
-          companies={companies}
-          selectedCompany={selectedCompany}
-          onSelectCompany={setSelectedCompany}
-        />
+        <div className="flex items-center gap-4">
+          <CompanySelector
+            companies={companies}
+            selectedCompany={selectedCompany}
+            onSelectCompany={handleCompanySelect}
+          />
+          <AddEmployeeDialog
+            companyId={selectedCompany.id}
+            onEmployeeAdded={handleEmployeeAdded}
+          />
+        </div>
         <GroupingControls grouping={grouping} onGroupingChange={setGrouping} />
       </div>
 
@@ -127,11 +177,14 @@ export function EmployeeTracker() {
       >
         <div className="space-y-8">
           {Object.entries(groupedEmployees).map(([group, employees]) => (
-            <div key={group} className="space-y-4">
+            <div key={`group-${group}`} className="space-y-4">
               <h2 className="text-2xl font-bold">{group}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {employees.map((employee) => (
-                  <Draggable key={employee.id} id={employee.id}>
+                  <Draggable
+                    key={`employee-${employee.id}-${employee.companyId}`}
+                    id={employee.id}
+                  >
                     <EmployeeCard employee={employee} />
                   </Draggable>
                 ))}
